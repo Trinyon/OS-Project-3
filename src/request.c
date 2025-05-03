@@ -14,7 +14,7 @@ int scheduling_algo = DEFAULT_SCHED_ALGO;
 //		pthread_mutuex_t lock_var is a viable option.
 //
 
-// creates buffer struct
+// creates struct
 typedef struct request_buffer_t{
     int fds[MAXBUF];
     int front;
@@ -27,84 +27,6 @@ typedef struct request_buffer_t{
 
 request_buffer_t request_buffer;
 
-// intializes buffer
-void buffer_init() {
-    request_buffer.front = 0;
-    request_buffer.back = 0;
-    request_buffer.amount = 0;
-    pthread_mutex_init(&request_buffer.lock, NULL);
-    pthread_cond_init(&request_buffer.empty, NULL);
-    pthread_cond_init(&request_buffer.full, NULL);
-    srand(time(NULL));
-}
-
-// 
-void buffer_insert(int fd) {
-    pthread_mutex_lock(&request_buffer.lock);
-    while (request_buffer.amount == buffer_max_size) {
-        pthread_cond_wait(&request_buffer.full, &request_buffer.lock);
-    }
-
-    request_buffer.fds[request_buffer.back] = fd;
-    request_buffer.back = (request_buffer.back + 1) % MAXBUF;
-    request_buffer.amount++;
-
-    pthread_cond_signal(&request_buffer.empty);
-    pthread_mutex_unlock(&request_buffer.lock);
-}
-
-//
-int buffer_remove() {
-    pthread_mutex_lock(&request_buffer.lock);
-    while (request_buffer.amount == 0) {
-        pthread_cond_wait(&request_buffer.empty, &request_buffer.lock);
-    }
-
-    int index = request_buffer.front;
-
-
-// SFF
-    if (scheduling_algo == 1) { 
-        int min_index = request_buffer.front;
-        struct stat sbuf_min;
-        fstat(request_buffer.fds[min_index], &sbuf_min);
-
-        int i = request_buffer.front;
-        for (int count = 0; count < request_buffer.amount; count++) {
-            int fd = request_buffer.fds[i];
-            struct stat sbuf;
-            fstat(fd, &sbuf);
-            if (sbuf.st_size < sbuf_min.st_size) {
-                min_index = i;
-                sbuf_min = sbuf;
-            }
-            i = (i + 1) % MAXBUF;
-        }
-        index = min_index;
-
-
-// random
-    } else if (scheduling_algo == 2) { 
-        int offset = rand() % request_buffer.amount;
-        index = (request_buffer.front + offset) % MAXBUF;
-    }
-
-    int fd = request_buffer.fds[index];
-
-// shift entries to fill the gap
-    int i = index;
-    while (i != request_buffer.back) {
-        int next = (i + 1) % MAXBUF;
-        request_buffer.fds[i] = request_buffer.fds[next];
-        i = next;
-    }
-    request_buffer.back = (request_buffer.back - 1 + MAXBUF) % MAXBUF;
-    request_buffer.amount--;
-
-    pthread_cond_signal(&request_buffer.full);
-    pthread_mutex_unlock(&request_buffer.lock);
-    return fd;
-}
 
 
 //
@@ -178,7 +100,7 @@ int request_parse_uri(char *uri, char *filename, char *cgiargs) {
 	} else {
 	    strcpy(cgiargs, "");
 	}
-	sprintf(filename, ".%s", uri);
+	sprintf(filename, "./files%s", uri);
 	return 0;
     }
 }
@@ -234,11 +156,7 @@ void* thread_request_serve_static(void* arg)
 {
     // TODO: write code to actualy respond to HTTP requests
     // Pull from global buffer of requests
-    while (1) {
-        int fd = buffer_remove();
-        requesthandle(fd);
-        close_or_die(fd);
-    }
+    
 }
 
 //
