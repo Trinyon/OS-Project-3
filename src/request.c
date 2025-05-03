@@ -14,6 +14,18 @@ int scheduling_algo = DEFAULT_SCHED_ALGO;
 //		pthread_mutuex_t lock_var is a viable option.
 //
 
+typedef struct request_buffer_t{
+    int fds[MAXBUF];
+    int front;
+    int back;
+    int amount;
+    pthread_mutex_t lock;
+    pthread_cond_t empty;
+    pthread_cond_t full;
+} request_buffer_t;
+
+request_buffer_t request_buffer;
+
 //
 // Sends out HTTP response in case of errors
 //
@@ -141,6 +153,9 @@ void* thread_request_serve_static(void* arg)
 {
     // TODO: write code to actualy respond to HTTP requests
     // Pull from global buffer of requests
+    while (1) {
+    
+}
 }
 
 //
@@ -182,6 +197,7 @@ void request_handle(int fd) {
     
 	// TODO: directory traversal mitigation	
 	// TODO: write code to add HTTP requests in the buffer
+
 
     } else {
 	request_error(fd, filename, "501", "Not Implemented", "server does not serve dynamic content request");
