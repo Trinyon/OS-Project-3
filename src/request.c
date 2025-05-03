@@ -15,7 +15,7 @@ int scheduling_algo = DEFAULT_SCHED_ALGO;
 //
 
 // creates struct
-typedef struct request_buffer_t{
+typedef struct request_buffer_t {
     int fds[MAXBUF];
     int front;
     int back;
@@ -26,6 +26,16 @@ typedef struct request_buffer_t{
 } request_buffer_t;
 
 request_buffer_t request_buffer;
+
+// initializing buffer
+void buffer_init(request_buffer_t *buffer) {
+    buffer -> front = 0;
+    buffer -> back = 0;
+    buffer -> amount = 0;
+    pthread_mutex_init(&buffer -> lock, NULL);
+    pthread_cond_init(&buffer -> empty, NULL);
+    pthread_cond_init(&buffer -> full, NULL);
+}
 
 
 
@@ -86,9 +96,9 @@ int request_parse_uri(char *uri, char *filename, char *cgiargs) {
     if (!strstr(uri, "cgi")) { 
 	// static
 	strcpy(cgiargs, "");
-	sprintf(filename, "./files%s", uri);
+	sprintf(filename, ".%s", uri);
 	if (uri[strlen(uri)-1] == '/') {
-	    strcat(filename, "/index.html");
+	    strcat(filename, "index.html");
 	}
 	return 1;
     } else { 
@@ -100,7 +110,7 @@ int request_parse_uri(char *uri, char *filename, char *cgiargs) {
 	} else {
 	    strcpy(cgiargs, "");
 	}
-	sprintf(filename, "./files%s", uri);
+	sprintf(filename, ".%s", uri);
 	return 0;
     }
 }
@@ -156,7 +166,9 @@ void* thread_request_serve_static(void* arg)
 {
     // TODO: write code to actualy respond to HTTP requests
     // Pull from global buffer of requests
-    
+    while(1) {
+
+    }
 }
 
 //
