@@ -2,6 +2,7 @@
 #include "request.h"
 
 #define MAXBUF (8192)
+#define BUFFERSIZE 50
 
 // below default values are defined in 'request.h'
 int num_threads = DEFAULT_THREADS;
@@ -25,7 +26,7 @@ typedef struct request_t {
 
 // array of requests
 typedef struct {
-    request_t buffer[50];
+    request_t buffer[BUFFERSIZE];
     int first;
     int last;
     int count;
@@ -173,6 +174,13 @@ void* thread_request_serve_static(void* arg)
         while (buffer.count == 0) {
             pthread_cond_wait(&buffer.empty, &buffer.lock);
     }
+
+    request_t *req = &buffer.buffer[buffer.first];
+
+
+    pthread_cond_signal(&buffer.full);
+    pthread_mutex_unlock(&buffer.lock);
+
 }
 }
 
@@ -222,6 +230,12 @@ void request_handle(int fd) {
         pthread_cond_wait(&buffer.full, &buffer.lock);
     }
 
+    request_t *req = &buffer.buffer[buffer.last];
+
+    
+
+    pthread_cond_signal(&buffer.empty);
+    pthread_mutex_unlock(&buffer.lock);
 
     } else {
 	request_error(fd, filename, "501", "Not Implemented", "server does not serve dynamic content request");
