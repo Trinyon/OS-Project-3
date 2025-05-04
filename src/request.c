@@ -4,6 +4,10 @@
 #define MAXBUF (8192)
 #define BUFFERSIZE 50
 
+pthread_mutex_t buffer_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t buffer_empty = PTHREAD_COND_INITIALIZER;;
+pthread_cond_t buffer_full = PTHREAD_COND_INITIALIZER;;
+
 // below default values are defined in 'request.h'
 int num_threads = DEFAULT_THREADS;
 int buffer_max_size = DEFAULT_BUFFER_SIZE;
@@ -30,13 +34,14 @@ typedef struct {
     int first;
     int last;
     int count;
-    pthread_mutex_t lock;
-    pthread_cond_t empty;
-    pthread_cond_t full;
 } request_buffer_t;
 
-request_buffer_t buffer;
-
+// initializing buffer values
+request_buffer_t buffer = {
+    .first = 0,
+    .last = 0,
+    .count = 0
+};
 
 
 
@@ -167,21 +172,36 @@ void* thread_request_serve_static(void* arg)
 {
     // TODO: write code to actualy respond to HTTP requests
     // Pull from global buffer of requests
+
+    
     while(1) {
 
-        pthread_mutex_lock(%buffer.lock);
-
+        pthread_mutex_lock(&buffer_lock);
+        
+        // wait if empty
         while (buffer.count == 0) {
-            pthread_cond_wait(&buffer.empty, &buffer.lock);
+            pthread_cond_wait(&buffer_empty, &buffer_lock);
     }
 
-    request_t *req = &buffer.buffer[buffer.first];
+    request_t req = buffer.buffer[buffer.first];
+
+    // update buffer
+    buffer.first = (buffer.first + 1) % BUFFERSIZE;
+    buffer.count--;
+
+    // signal thread and unlock
+    pthread_cond_signal(&buffer_full);
+    pthread_mutex_unlock(&buffer_lock);
 
 
-    pthread_cond_signal(&buffer.full);
-    pthread_mutex_unlock(&buffer.lock);
+    struct stat sbuf;
+    if (stat(req.filename, &sbuf) >= 0) {
+        request_serve_static(req.fd, req.filename, sbuf.st_size);
+    }
 
+    close_or_die(req.fd);
 }
+
 }
 
 //
@@ -222,20 +242,31 @@ void request_handle(int fd) {
 	}
     
 	// TODO: directory traversal mitigation	
+
+
 	// TODO: write code to add HTTP requests in the buffer
 
-    pthread_mutex_lock(%buffer.lock);
+    pthread_mutex_lock(&buffer_lock);
 
+    // wait if full
     while (buffer.count == 50) {
-        pthread_cond_wait(&buffer.full, &buffer.lock);
+        pthread_cond_wait(&buffer_full, &buffer_lock);
     }
 
     request_t *req = &buffer.buffer[buffer.last];
 
+    // adds to buffer
+    req -> fd = fd
+    strncpy(req -> filename, filename, MAXBUF);
+    req -> buffersize = sbuf.st_size;
     
+    // update buffer
+    buffer.last = (buffer.last - 1) % BUFFERSIZE;
+    buffer.count++;
 
-    pthread_cond_signal(&buffer.empty);
-    pthread_mutex_unlock(&buffer.lock);
+    // signal thread and unlock
+    pthread_cond_signal(&buffer_empty);
+    pthread_mutex_unlock(&buffer_lock);
 
     } else {
 	request_error(fd, filename, "501", "Not Implemented", "server does not serve dynamic content request");
