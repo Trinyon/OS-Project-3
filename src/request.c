@@ -19,7 +19,6 @@ int scheduling_algo = DEFAULT_SCHED_ALGO;
 //		pthread_mutuex_t lock_var is a viable option.
 // need a struct
 // need array of requests
-// need req.array.add(request)
 
 // creates struct for each request
 typedef struct request_t {
@@ -104,7 +103,7 @@ int request_parse_uri(char *uri, char *filename, char *cgiargs) {
 	strcpy(cgiargs, "");
 	sprintf(filename, ".%s", uri);
 	if (uri[strlen(uri)-1] == '/') {
-	    strcat(filename, "files/test1.html");
+	    strcat(filename, "index.html");
 	}
 	return 1;
     } else { 
@@ -281,8 +280,6 @@ void request_handle(int fd) {
     if (strstr(filename, "../")) {
             request_error(fd, filename, "403", "Forbidden", "Permission Denied");
             return;
-        
-
     }
 
 	// TODO: write code to add HTTP requests in the buffer
