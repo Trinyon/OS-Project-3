@@ -168,7 +168,12 @@ void* thread_request_serve_static(void* arg)
     // Pull from global buffer of requests
     while(1) {
 
+        pthread_mutex_lock(%buffer.lock);
+
+        while (buffer.count == 0) {
+            pthread_cond_wait(&buffer.empty, &buffer.lock);
     }
+}
 }
 
 //
@@ -210,6 +215,12 @@ void request_handle(int fd) {
     
 	// TODO: directory traversal mitigation	
 	// TODO: write code to add HTTP requests in the buffer
+
+    pthread_mutex_lock(%buffer.lock);
+
+    while (buffer.count == 50) {
+        pthread_cond_wait(&buffer.full, &buffer.lock);
+    }
 
 
     } else {
