@@ -103,8 +103,8 @@ int request_parse_uri(char *uri, char *filename, char *cgiargs) {
 	// static
 	strcpy(cgiargs, "");
 	sprintf(filename, ".%s", uri);
-	if (uri[strlen(uri)-1] == '/') {
-	    strcat(filename, "./files/test1.html");
+	if (uri[strlen(uri)-1] == '/files/test1.html') {
+	    strcat(filename, "test1.html");
 	}
 	return 1;
     } else { 
@@ -183,8 +183,30 @@ void* thread_request_serve_static(void* arg)
             pthread_cond_wait(&buffer_empty, &buffer_lock);
     }
 
-    request_t req = buffer.buffer[buffer.first];
+    // store value of request tht will get chosen (starts in FIFO)
+    int req_num = buffer.first;
 
+    // SFF
+    if (scheduling_algo == 1) {
+        int smallest = buffer.first;
+        for (int i = 1; i < buffer.count; i++) {
+            int pos = (buffer.first + i) % BUFFERSIZE;
+            if (buffer.buffer[pos].buffersize < buffer.buffer[smallest].buffersize) {
+                smallest = pos;
+            }
+        }
+        req_num = smallest;
+    }
+
+    // RANDOM
+    if (scheduling_algo == 2) {
+        int offset = rand() % buffer.count;
+        req_num = (buffer.first + offset) % BUFFERSIZE;
+    }
+
+    request_t req = buffer.buffer[buffer.[req_num]];
+
+    
     // update buffer
     buffer.first = (buffer.first + 1) % BUFFERSIZE;
     buffer.count--;
