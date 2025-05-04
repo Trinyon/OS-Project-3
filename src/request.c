@@ -103,8 +103,8 @@ int request_parse_uri(char *uri, char *filename, char *cgiargs) {
 	// static
 	strcpy(cgiargs, "");
 	sprintf(filename, ".%s", uri);
-	if (uri[strlen(uri)-1] == '/files/test1.html') {
-	    strcat(filename, "test1.html");
+	if (uri[strlen(uri)-1] == '/') {
+	    strcat(filename, "files/test1.html");
 	}
 	return 1;
     } else { 
@@ -204,9 +204,9 @@ void* thread_request_serve_static(void* arg)
         req_num = (buffer.first + offset) % BUFFERSIZE;
     }
 
-    request_t req = buffer.buffer[buffer.[req_num]];
+    request_t req = buffer.buffer[req_num];
 
-    
+
     // update buffer
     buffer.first = (buffer.first + 1) % BUFFERSIZE;
     buffer.count--;
@@ -285,12 +285,12 @@ void request_handle(int fd) {
     request_t *req = &buffer.buffer[buffer.last];
 
     // adds to buffer
-    req -> fd = fd
+    req -> fd = fd;
     strncpy(req -> filename, filename, MAXBUF);
     req -> buffersize = sbuf.st_size;
     
     // update buffer
-    buffer.last = (buffer.last - 1) % BUFFERSIZE;
+    buffer.last = (buffer.last + 1) % BUFFERSIZE;
     buffer.count++;
 
     // signal thread and unlock
