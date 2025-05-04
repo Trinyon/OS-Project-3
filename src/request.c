@@ -244,10 +244,10 @@ void request_handle(int fd) {
 	// TODO: directory traversal mitigation	
 
     // checks if ../ appears anywhere in request
-    if (strstr(filename, "../")) 
+    if (strstr(filename, "../")) {
             request_error(fd, filename, "403", "Forbidden", "Permission Denied");
             return;
-        }
+        
 
     }
 
