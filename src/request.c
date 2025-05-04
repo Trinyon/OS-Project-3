@@ -12,30 +12,30 @@ int scheduling_algo = DEFAULT_SCHED_ALGO;
 //	TODO: add code to create and manage the shared global buffer of requests
 //	HINT: You will need synchronization primitives.
 //		pthread_mutuex_t lock_var is a viable option.
-//
+// need a struct
+// need array of requests
+// need req.array.add(request)
 
-// creates struct
-typedef struct request_buffer_t {
-    int fds[MAXBUF];
-    int front;
-    int back;
-    int amount;
+// creates struct for each request
+typedef struct request_t {
+    int fd;
+    char filename[MAXBUF];
+    int buffersize;
+} request_t;
+
+// array of requests
+typedef struct {
+    request_t buffer[50];
+    int first;
+    int last;
+    int count;
     pthread_mutex_t lock;
     pthread_cond_t empty;
     pthread_cond_t full;
 } request_buffer_t;
 
-request_buffer_t request_buffer;
+request_buffer_t buffer;
 
-// initializing buffer
-void buffer_init(request_buffer_t *buffer) {
-    buffer -> front = 0;
-    buffer -> back = 0;
-    buffer -> amount = 0;
-    pthread_mutex_init(&buffer -> lock, NULL);
-    pthread_cond_init(&buffer -> empty, NULL);
-    pthread_cond_init(&buffer -> full, NULL);
-}
 
 
 
@@ -98,7 +98,7 @@ int request_parse_uri(char *uri, char *filename, char *cgiargs) {
 	strcpy(cgiargs, "");
 	sprintf(filename, ".%s", uri);
 	if (uri[strlen(uri)-1] == '/') {
-	    strcat(filename, "index.html");
+	    strcat(filename, "./files/test1.html");
 	}
 	return 1;
     } else { 
