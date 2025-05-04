@@ -206,9 +206,21 @@ void* thread_request_serve_static(void* arg)
 
     request_t req = buffer.buffer[req_num];
 
+    // fills gaps in buffer to stop it from breking
+    if (req_num == buffer.first) {
+        buffer.first = (buffer.first + 1) % BUFFERSIZE;
+    } else {
+        int i = req_num;
+        while (i != buffer.last) {
+            int next = (i + 1) % BUFFERSIZE;
+            buffer.buffer[i] = buffer.buffer[next];
+            i = next;
+        }
+        // put inside so it doesn't double decrement
+        buffer.last = (buffer.last - 1 + BUFFERSIZE) % BUFFERSIZE;
+    }
 
     // update buffer
-    buffer.first = (buffer.first + 1) % BUFFERSIZE;
     buffer.count--;
 
     // signal thread and unlock
